@@ -1,4 +1,4 @@
-# By Jerrald Guiriba
+# By Jerrald J. Guiriba
 # https://github.com/Jed556/CTk-YTDL
 
 import tkinter
@@ -9,7 +9,6 @@ import subprocess
 import threading
 from tkVideoPlayer import TkinterVideo
 import time
-import pygame
 
 # Modes: "System" (standard), "Dark", "Light"
 customtkinter.set_appearance_mode("System")
@@ -36,9 +35,6 @@ class YoutubeDownloaderApp(customtkinter.CTk):
         self.grid_columnconfigure(4, weight=1, minsize=500)
         self.grid_columnconfigure(3, weight=0)
         self.grid_rowconfigure(0, weight=1)
-
-        # Initialize pygame mixer
-        pygame.mixer.init()
 
         # Sidebar Frame
         self.sidebar_frame = customtkinter.CTkFrame(
@@ -106,7 +102,7 @@ class YoutubeDownloaderApp(customtkinter.CTk):
             self.download_frame, values=["Video", "Audio", "Both"])
         self.download_option.grid(row=0, column=3, padx=(
             20, 0), pady=(0, 5), sticky="nsew")
-        self.download_option.set("Video")  # Set default value
+        self.download_option.set("Video")
 
         # Download Frame - Download Button
         self.download_button = customtkinter.CTkButton(
@@ -135,7 +131,7 @@ class YoutubeDownloaderApp(customtkinter.CTk):
         self.progressbar_3 = customtkinter.CTkProgressBar(
             self.volume_frame, orientation="vertical")
         self.progressbar_3.grid(row=0, column=1, padx=10, pady=10, sticky="ns")
-        self.progressbar_3.set(0)  # Initialize the progress bar value
+        self.progressbar_3.set(0)
 
         self.gain_label = customtkinter.CTkLabel(
             self.volume_frame, text="0 db")
@@ -156,7 +152,7 @@ class YoutubeDownloaderApp(customtkinter.CTk):
 
         # Video Player Frame - Video Player
         self.video_player = TkinterVideo(
-            master=self.video_player_frame, scaled=False)
+            master=self.video_player_frame, scaled=True)
         self.video_player.grid(row=1, column=0, padx=(
             20, 20), pady=(10, 10), sticky="nsew")
 
@@ -281,22 +277,23 @@ class YoutubeDownloaderApp(customtkinter.CTk):
                        "--recode-video", "mp4", "--add-metadata", "--embed-thumbnail"]
             save_dir = download_path["both"]
 
-        try:
-            subprocess.run(command, check=True)
-            tkinter.messagebox.showinfo(
-                "Success", "Download completed successfully.")
-            self.update_history(url, save_dir)
-            self.save_dir_textbox.configure(state="normal")
-            self.save_dir_textbox.delete("1.0", "end")
-            self.save_dir_textbox.insert("1.0", f"Saved to {save_dir}")
-            self.save_dir_textbox.configure(state="disabled")
-        except subprocess.CalledProcessError as e:
-            print(f"Error downloading {download_type}: {e}")
-            tkinter.messagebox.showerror(
-                "Error", f"Failed to download {download_type}: {e}")
+        # try:
+        subprocess.run(command, check=True)
+        tkinter.messagebox.showinfo(
+            "Success", "Download completed successfully.")
+        self.clear_history()
+        self.load_history()
+        self.save_dir_textbox.configure(state="normal")
+        self.save_dir_textbox.delete("1.0", "end")
+        self.save_dir_textbox.insert("1.0", f"Saved to {save_dir}")
+        self.save_dir_textbox.configure(state="disabled")
+        # except subprocess.CalledProcessError as e:
+        #     print(f"Error downloading {download_type}: {e}")
+        #     tkinter.messagebox.showerror(
+        #         "Error", f"Failed to download {download_type}: {e}")
 
     def download_event(self):
-        threading.Thread(target=self.download_video).start()
+        self.download_video()
         self.url_entry.delete(0, "end")
 
     def load_history(self):
@@ -314,12 +311,19 @@ class YoutubeDownloaderApp(customtkinter.CTk):
         for file in os.listdir(download_path["both"]):
             self.create_history_frame(file, "both")
 
+    def clear_history(self):
+        for widget in self.video_scrollable_frame.winfo_children():
+            widget.destroy()
+        for widget in self.audio_scrollable_frame.winfo_children():
+            widget.destroy()
+        for widget in self.both_scrollable_frame.winfo_children():
+            widget.destroy()
+
     def create_history_frame(self, file, media_type):
         parent_frame = self.video_scrollable_frame if media_type == "video" else self.audio_scrollable_frame if media_type == "audio" else self.both_scrollable_frame
-        # Ensure the parent frame expands
         parent_frame.grid_columnconfigure(0, weight=1)
         frame = customtkinter.CTkFrame(
-            parent_frame, fg_color="lightblue")  # Set background color here
+            parent_frame)
         frame.grid_columnconfigure((0, 1, 2), weight=1)
         frame.grid_columnconfigure((3), weight=0)
 
@@ -378,27 +382,33 @@ class YoutubeDownloaderApp(customtkinter.CTk):
             tkinter.messagebox.showerror(
                 "Error", f"File not found: {file_path}")
 
-    def update_history(self, url, save_dir):
-        if "video" in save_dir:
-            self.create_history_frame(url, "video")
-        elif "audio" in save_dir:
-            self.create_history_frame(url, "audio")
-        elif "both" in save_dir:
-            self.create_history_frame(url, "both")
-
     def play_video(self):
+        # if self.is_audio():
+        #     pygame.mixer.music.play()
+        # else:
         self.video_player.play()
         self.update_progress()
 
     def prev_video(self):
-        # Implement logic to play the previous video
-        print("Previous video")
+        print("Previous video or audio")
 
     def seek_back(self):
+        # if self.is_audio():
+        #     pygame.mixer.music.rewind()
+        #     pygame.mixer.music.set_pos(pygame.mixer.music.get_pos() - 10)
+        # else:
         self.video_player.seek(self.video_player.current_duration() - 10)
         self.update_progress()
 
     def play_pause_video(self):
+        # if self.is_audio():
+        #     if pygame.mixer.music.get_busy():
+        #         pygame.mixer.music.pause()
+        #         self.play_pause_button.configure(text="Play")
+        #     else:
+        #         pygame.mixer.music.unpause()
+        #         self.play_pause_button.configure(text="Pause")
+        # else:
         if self.video_player.is_paused():
             self.video_player.play()
             self.play_pause_button.configure(text="Pause")
@@ -407,16 +417,24 @@ class YoutubeDownloaderApp(customtkinter.CTk):
             self.play_pause_button.configure(text="Play")
 
     def seek_forward(self):
+        # if self.is_audio():
+        #     pygame.mixer.music.set_pos(pygame.mixer.music.get_pos() + 10)
+        # else:
         self.video_player.seek(self.video_player.current_duration() + 10)
         self.update_progress()
 
     def next_video(self):
-        # Implement logic to play the next video
-        print("Next video")
+        print("Next video or audio")
 
     def seek_video(self, value):
+        # if self.is_audio():
+        #     pygame.mixer.music.set_pos(int(value))
+        # else:
         self.video_player.seek(int(value))
         self.update_progress()
+
+    # def is_audio(self):
+    #     return self.current_media_type == 'audio'
 
     def update_progress(self, event=None):
         try:
